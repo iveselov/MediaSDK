@@ -24,12 +24,15 @@
 #include <mfx_user_plugin.h>
 #include <mfx_utils.h>
 
+#define MSDK_STATIC_ASSERT(COND, MSG)  typedef char static_assertion_##MSG[ (COND) ? 1 : -1];
+
 // static section of the file
 namespace
 {
 
-    VideoCodecUSER *CreateUSERSpecificClass(mfxU32 /*type*/)
+    VideoCodecUSER *CreateUSERSpecificClass(mfxU32 type)
     {
+        type;
         return new VideoUSERPlugin;
 
     } // VideoUSER *CreateUSERSpecificClass(mfxU32 type)
@@ -79,7 +82,7 @@ namespace
             case MFX_PLUGINTYPE_VIDEO_ENC :
                 {
 #if defined (MFX_PLUGIN_FILE_VERSION) || defined(MFX_PLUGIN_PRODUCT_VERSION)
-                    static_assert(false, "This file under no conditions should appear in plugin code.");
+                    MSDK_STATIC_ASSERT("This file under no conditions should appear in plugin code.");
 #endif
                     // we know that this conversion is safe as this is library-only code
                     // _mfxSession_1_10 - should be used always to get versioned session instance
@@ -169,10 +172,7 @@ namespace
 
 const mfxPluginUID NativePlugins[] =
 {
-    MFX_PLUGINID_HEVCE_HW,
-    MFX_PLUGINID_HEVCD_HW,
-    MFX_PLUGINID_VP8D_HW,
-    MFX_PLUGINID_VP9D_HW
+    MFX_PLUGINID_HEVCE_HW
 };
 
 mfxStatus MFXVideoUSER_Register(mfxSession session, mfxU32 type,
@@ -200,12 +200,6 @@ mfxStatus MFXVideoUSER_Register(mfxSession session, mfxU32 type,
         {
             return MFX_ERR_UNDEFINED_BEHAVIOR;
         }
-
-#ifndef MFX_ENABLE_USER_VPP
-        if (sessionPtr.isNeedVPP()) {
-            return MFX_ERR_UNSUPPORTED;
-        }
-#endif
 
         //check is this plugin was included into MSDK lib as a native component
         mfxRes = par->GetPluginParam(par->pthis, &pluginParam);
@@ -319,7 +313,7 @@ mfxStatus MFXVideoUSER_Unregister(mfxSession session, mfxU32 type)
         SessionPtr sessionPtr(session, type);
         std::unique_ptr<VideoCodecUSER> & registeredPlg = sessionPtr.plugin();
         if (NULL == registeredPlg.get())
-            return MFX_ERR_NONE;
+            return MFX_ERR_NOT_INITIALIZED;
 
         // wait until all tasks are processed
         session->m_pScheduler->WaitForTaskCompletion(registeredPlg.get());

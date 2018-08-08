@@ -27,9 +27,11 @@
 #include <vm_sys_info.h>
 #include <umc_automatic_mutex.h>
 #include <mfx_trace.h>
-
-#include <functional>
 #include <cassert>
+
+
+
+
 
 enum
 {
@@ -57,6 +59,7 @@ mfxStatus mfxSchedulerCore::Initialize2(const MFX_SCHEDULER_PARAM2 *pParam)
 {
     UMC::Status umcRes;
     mfxU32 i;
+    mfxU32 iRes;
 
     // release the object before initialization
     Close();
@@ -134,9 +137,14 @@ mfxStatus mfxSchedulerCore::Initialize2(const MFX_SCHEDULER_PARAM2 *pParam)
                     return MFX_ERR_UNKNOWN;
                 }
                 // spawn a thread
-                m_pThreadCtx[i].threadHandle = std::thread(
-                    std::bind(&mfxSchedulerCore::ThreadProc, this, &m_pThreadCtx[i]));
-
+                iRes = vm_thread_create(
+                    &(m_pThreadCtx[i].threadHandle),
+                    scheduler_thread_proc,
+                    m_pThreadCtx + i);
+                if (0 == iRes)
+                {
+                    return MFX_ERR_UNKNOWN;
+                }
                 if (!SetScheduling(m_pThreadCtx[i].threadHandle)) {
                     return MFX_ERR_UNKNOWN;
                 }
@@ -545,14 +553,20 @@ mfxStatus mfxSchedulerCore::AdjustPerformance(const mfxSchedulerMessage message)
     case MFX_SCHEDULER_START_HW_LISTENING:
         if (m_param.flags != MFX_SINGLE_THREAD)
         {
-            mfxRes = StartWakeUpThread();
+            if (0 == vm_thread_is_valid(&m_hwWakeUpThread))
+            {
+                mfxRes = StartWakeUpThread();
+            }
         }
         break;
 
     case MFX_SCHEDULER_STOP_HW_LISTENING:
         if (m_param.flags != MFX_SINGLE_THREAD)
         {
-            mfxRes = StopWakeUpThread();
+            if (vm_thread_is_valid(&m_hwWakeUpThread))
+            {
+                mfxRes = StopWakeUpThread();
+            }
         }
         break;
 

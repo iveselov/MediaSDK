@@ -30,7 +30,7 @@ mfxStatus mfxSchedulerCore::StartWakeUpThread(void)
 {
     // stop the thread before creating it again
     // don't try to check thread status, it might lead to interesting effects.
-    if (m_hwWakeUpThread.joinable())
+    if (m_hwWakeUpThread.handle)
         StopWakeUpThread();
 
     m_timer_hw_event = MFX_THREAD_TIME_TO_WAIT;
@@ -48,18 +48,26 @@ mfxStatus mfxSchedulerCore::StopWakeUpThread(void)
 
 } // mfxStatus mfxSchedulerCore::StopWakeUpThread(void)
 
+uint32_t mfxSchedulerCore::scheduler_thread_proc(void *pParam)
+{
+    MFX_SCHEDULER_THREAD_CONTEXT *pContext = (MFX_SCHEDULER_THREAD_CONTEXT *) pParam;
+
+    {
+        char thread_name[30] = {};
+        snprintf(thread_name, sizeof(thread_name)-1, "ThreadName=MSDK#%d", pContext->threadNum);
+        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_SCHED, thread_name);
+    }
+
+    pContext->pSchedulerCore->ThreadProc(pContext);
+    return (0x0cced00 + pContext->threadNum);
+}
+
 void mfxSchedulerCore::ThreadProc(MFX_SCHEDULER_THREAD_CONTEXT *pContext)
 {
     UMC::AutomaticMutex guard(m_guard);
 
     mfxTaskHandle previousTaskHandle = {};
     const uint32_t threadNum = pContext->threadNum;
-
-    {
-        char thread_name[30] = {};
-        snprintf(thread_name, sizeof(thread_name)-1, "ThreadName=MSDK#%d", threadNum);
-        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_SCHED, thread_name);
-    }
 
     // main working cycle for threads
     while (false == m_bQuit)
@@ -113,13 +121,21 @@ void mfxSchedulerCore::ThreadProc(MFX_SCHEDULER_THREAD_CONTEXT *pContext)
     }
 }
 
-void mfxSchedulerCore::WakeupThreadProc()
+uint32_t mfxSchedulerCore::scheduler_wakeup_thread_proc(void *pParam)
 {
+    mfxSchedulerCore * const pSchedulerCore = (mfxSchedulerCore *) pParam;
+
     {
         const char thread_name[30] = "ThreadName=MSDKHWL#0";
         MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_SCHED, thread_name);
     }
 
+    pSchedulerCore->WakeupThreadProc();
+    return 0x0ccedff;
+}
+
+void mfxSchedulerCore::WakeupThreadProc()
+{
     // main working cycle for threads
     while (false == m_bQuitWakeUpThread)
     {

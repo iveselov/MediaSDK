@@ -70,13 +70,11 @@
 #include "mfx_user_plugin.h"
 #endif
 
-template<>
-VideoDECODE* _mfxSession::Create<VideoDECODE>(mfxVideoParam& par)
+
+VideoDECODE *CreateDECODESpecificClass(mfxU32 CodecId, VideoCORE *core, mfxSession /* session */)
 {
-    VideoDECODE* pDECODE = nullptr;
-    VideoCORE* core = m_pCORE.get();
+    VideoDECODE *pDECODE = (VideoDECODE *) 0;
     mfxStatus mfxRes = MFX_ERR_MEMORY_ALLOC;
-    mfxU32 CodecId = par.mfx.CodecId;
 
     // create a codec instance
     switch (CodecId)
@@ -113,15 +111,28 @@ VideoDECODE* _mfxSession::Create<VideoDECODE>(mfxVideoParam& par)
 
 #if defined(MFX_ENABLE_VP8_VIDEO_DECODE_HW)
     case MFX_CODEC_VP8:
+#if defined(MFX_ENABLE_VP8_VIDEO_DECODE_HW)
         pDECODE = new VideoDECODEVP8_HW(core, &mfxRes);
+#else // MFX_VA
+        pDECODE = new VideoDECODEVP8(core, &mfxRes);
+
+#endif // MFX_VA && MFX_ENABLE_VP8_VIDEO_DECODE_HW
+
         break;
 #endif
 
 #if defined(MFX_ENABLE_VP9_VIDEO_DECODE_HW)
      case MFX_CODEC_VP9:
+#if defined(MFX_ENABLE_VP9_VIDEO_DECODE_HW)
         pDECODE = new VideoDECODEVP9_HW(core, &mfxRes);
+#else // MFX_VA
+        pDECODE = new VideoDECODEVP9(core, &mfxRes);
+
+#endif // MFX_VA && MFX_ENABLE_VP9_VIDEO_DECODE_HW
+
         break;
 #endif
+
 
     default:
         break;
@@ -131,11 +142,12 @@ VideoDECODE* _mfxSession::Create<VideoDECODE>(mfxVideoParam& par)
     if (MFX_ERR_NONE != mfxRes)
     {
         delete pDECODE;
-        pDECODE = nullptr;
+        pDECODE = (VideoDECODE *) 0;
     }
 
     return pDECODE;
-}
+
+} // VideoDECODE *CreateDECODESpecificClass(mfxU32 CodecId, VideoCORE *core)
 
 mfxStatus MFXVideoDECODE_Query(mfxSession session, mfxVideoParam *in, mfxVideoParam *out)
 {
@@ -426,7 +438,7 @@ mfxStatus MFXVideoDECODE_Init(mfxSession session, mfxVideoParam *par)
         if (!session->m_pDECODE.get())
         {
             // create a new instance
-            session->m_pDECODE.reset(session->Create<VideoDECODE>(*par));
+            session->m_pDECODE.reset(CreateDECODESpecificClass(par->mfx.CodecId, session->m_pCORE.get(), session));
             MFX_CHECK(session->m_pDECODE.get(), MFX_ERR_INVALID_VIDEO_PARAM);
         }
 

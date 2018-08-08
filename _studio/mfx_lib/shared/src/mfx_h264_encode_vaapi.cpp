@@ -1661,12 +1661,12 @@ mfxStatus VAAPIEncoder::CreateAccelerationService(MfxVideoParam const & par)
 
     m_slice.resize(maxNumSlices);
     m_sliceBufferId.resize(maxNumSlices);
-    m_packedSliceHeaderBufferId.resize(maxNumSlices);
+    m_packeSliceHeaderBufferId.resize(maxNumSlices);
     m_packedSliceBufferId.resize(maxNumSlices);
 
-    std::fill(m_sliceBufferId.begin(),             m_sliceBufferId.end(),             VA_INVALID_ID);
-    std::fill(m_packedSliceHeaderBufferId.begin(), m_packedSliceHeaderBufferId.end(), VA_INVALID_ID);
-    std::fill(m_packedSliceBufferId.begin(),       m_packedSliceBufferId.end(),       VA_INVALID_ID);
+    std::fill(m_sliceBufferId.begin(),            m_sliceBufferId.end(),            VA_INVALID_ID);
+    std::fill(m_packeSliceHeaderBufferId.begin(), m_packeSliceHeaderBufferId.end(), VA_INVALID_ID);
+    std::fill(m_packedSliceBufferId.begin(),      m_packedSliceBufferId.end(),      VA_INVALID_ID);
 
 #if defined(MFX_ENABLE_H264_VIDEO_FEI_ENCPAK) || defined(MFX_ENABLE_H264_VIDEO_FEI_PREENC)
     if (m_isENCPAK)
@@ -1814,8 +1814,10 @@ mfxStatus VAAPIEncoder::Reset(MfxVideoParam const & par)
 } // mfxStatus VAAPIEncoder::Reset(MfxVideoParam const & par)
 
 
-mfxStatus VAAPIEncoder::QueryCompBufferInfo(D3DDDIFORMAT /*type*/, mfxFrameAllocRequest& request)
+mfxStatus VAAPIEncoder::QueryCompBufferInfo(D3DDDIFORMAT type, mfxFrameAllocRequest& request)
 {
+    type;
+
     // request linear buffer
     request.Info.FourCC = MFX_FOURCC_P8;
 
@@ -1920,8 +1922,12 @@ mfxStatus VAAPIEncoder::QueryInputTilingSupport(mfxVideoParam const & par, mfxU3
     return MFX_ERR_NONE;
 }
 
-mfxStatus VAAPIEncoder::QueryHWGUID(VideoCORE * /*core*/, GUID /*guid*/, bool /*isTemporal*/)
+mfxStatus VAAPIEncoder::QueryHWGUID(VideoCORE * core, GUID guid, bool isTemporal)
 {
+    core;
+    guid;
+    isTemporal;
+
     return MFX_ERR_UNSUPPORTED;
 }
 
@@ -1969,9 +1975,13 @@ mfxStatus VAAPIEncoder::Register(mfxFrameAllocResponse& response, D3DDDIFORMAT t
 } // mfxStatus VAAPIEncoder::Register(mfxFrameAllocResponse& response, D3DDDIFORMAT type)
 
 
-mfxStatus VAAPIEncoder::Register(mfxMemId /*memId*/, D3DDDIFORMAT /*type*/)
+mfxStatus VAAPIEncoder::Register(mfxMemId memId, D3DDDIFORMAT type)
 {
+    memId;
+    type;
+
     return MFX_ERR_UNSUPPORTED;
+
 } // mfxStatus VAAPIEncoder::Register(mfxMemId memId, D3DDDIFORMAT type)
 
 
@@ -2035,7 +2045,7 @@ mfxStatus VAAPIEncoder::Execute(
             mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_sliceBufferId[i]);
             MFX_CHECK_STS(mfxSts);
 
-            mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_packedSliceHeaderBufferId[i]);
+            mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_packeSliceHeaderBufferId[i]);
             MFX_CHECK_STS(mfxSts);
 
             mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_packedSliceBufferId[i]);
@@ -2061,7 +2071,7 @@ mfxStatus VAAPIEncoder::Execute(
         if (slice_size_old != m_slice.size())
         {
             m_sliceBufferId.resize(m_slice.size());
-            m_packedSliceHeaderBufferId.resize(m_slice.size());
+            m_packeSliceHeaderBufferId.resize(m_slice.size());
             m_packedSliceBufferId.resize(m_slice.size());
 
             if (m_headerPacker.isSvcPrefixUsed())
@@ -2712,7 +2722,7 @@ mfxStatus VAAPIEncoder::Execute(
                             sizeof(packed_header_param_buffer),
                             1,
                             &packed_header_param_buffer,
-                            &m_packedSliceHeaderBufferId[i]);
+                            &m_packeSliceHeaderBufferId[i]);
                     MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
 
                     // Buffer destroyed in the beginning of the function
@@ -2723,7 +2733,7 @@ mfxStatus VAAPIEncoder::Execute(
                                         &m_packedSliceBufferId[i]);
                     MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
 
-                    configBuffers[buffersCount++] = m_packedSliceHeaderBufferId[i];
+                    configBuffers[buffersCount++] = m_packeSliceHeaderBufferId[i];
                     configBuffers[buffersCount++] = m_packedSliceBufferId[i];
                 }
             }
@@ -3323,7 +3333,7 @@ mfxStatus VAAPIEncoder::Destroy()
         mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_sliceBufferId[i]);
         MFX_CHECK_STS(mfxSts);
 
-        mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_packedSliceHeaderBufferId[i]);
+        mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_packeSliceHeaderBufferId[i]);
         MFX_CHECK_STS(mfxSts);
 
         mfxSts = CheckAndDestroyVAbuffer(m_vaDisplay, m_packedSliceBufferId[i]);

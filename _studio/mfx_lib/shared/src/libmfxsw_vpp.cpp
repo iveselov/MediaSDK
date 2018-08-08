@@ -33,25 +33,23 @@
 #include "mfx_vpp_main.h"       // this VideoVPP class builds VPP pipeline and run the VPP pipeline
 #endif
 
-template<>
-VideoVPP* _mfxSession::Create<VideoVPP>(mfxVideoParam& par)
+VideoVPP *CreateVPPSpecificClass(mfxU32 /* reserved */, VideoCORE *core)
 {
-    VideoVPP *pVPP = nullptr;
-
-#ifdef MFX_ENABLE_VPP
-    VideoCORE* core = m_pCORE.get();
+    VideoVPP *pVPP = (VideoVPP *) 0;
     mfxStatus mfxRes = MFX_ERR_MEMORY_ALLOC;
 
+#ifdef MFX_ENABLE_VPP
     pVPP = new VideoVPPMain(core, &mfxRes);
     if (MFX_ERR_NONE != mfxRes)
     {
         delete pVPP;
-        pVPP = nullptr;
+        pVPP = (VideoVPP *) 0;
     }
 #endif // MFX_ENABLE_VPP
 
     return pVPP;
-}
+
+} // VideoVPP *CreateVPPSpecificClass(mfxU32 reserved)
 
 mfxStatus MFXVideoVPP_Query(mfxSession session, mfxVideoParam *in, mfxVideoParam *out)
 {
@@ -150,20 +148,32 @@ mfxStatus MFXVideoVPP_Init(mfxSession session, mfxVideoParam *par)
 
     try
     {
-        // check existence of component
-        if (!session->m_pVPP.get())
+#ifdef MFX_ENABLE_USER_VPP
+        if (session->m_plgVPP.get())
         {
-            // create a new instance
-            session->m_pVPP.reset(session->Create<VideoVPP>(*par));
-#ifdef MFX_ENABLE_VPP
-            MFX_CHECK(session->m_pVPP.get(), MFX_ERR_INVALID_VIDEO_PARAM);
-#else
-            MFX_CHECK(session->m_pVPP.get(), MFX_ERR_UNSUPPORTED);
-#endif
+            mfxRes = session->m_plgVPP->Init(par);
         }
+        else
+        {
+#endif
 
-        // create a new instance
-        mfxRes = session->m_pVPP->Init(par);
+#ifdef MFX_ENABLE_VPP
+            // close the existing video processor,
+            // if it is initialized.
+            if (session->m_pVPP.get())
+            {
+                MFXVideoVPP_Close(session);
+            }
+
+
+            // create a new instance
+            session->m_pVPP.reset(CreateVPPSpecificClass(0 ,session->m_pCORE.get()));
+            MFX_CHECK(session->m_pVPP.get(), MFX_ERR_INVALID_VIDEO_PARAM);
+            mfxRes = session->m_pVPP->Init(par);
+#endif // MFX_ENABLE_VPP
+#ifdef MFX_ENABLE_USER_VPP
+        }
+#endif
     }
     // handle error(s)
     catch(MFX_CORE_CATCH_TYPE)

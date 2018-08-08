@@ -35,6 +35,8 @@
 #include <mfx_interface_scheduler.h>
 #include <libmfx_core_operation.h>
 
+#define MSDK_STATIC_ASSERT(COND, MSG)  typedef char static_assertion_##MSG[ (COND) ? 1 : -1];
+
 // WARNING: please do not change the type of _mfxSession.
 // It is declared as 'struct' in the main header.h
 
@@ -135,8 +137,11 @@ struct _mfxSession
 
     MFXIPtr<OperatorCORE> m_pOperatorCore;
 
-    bool m_reserved1;
-    bool m_reserved2;
+    // if there are no Enc HW capabilities but HW library is used
+    bool m_bIsHWENCSupport;
+
+    // if there are no Dec HW capabilities but HW library is used
+    bool m_bIsHWDECSupport;
 
 
     inline
@@ -160,8 +165,6 @@ struct _mfxSession
         return (NULL == m_pSchedulerAllocated);
     }
     
-    template<class T>
-    T* Create(mfxVideoParam& par);
 
 protected:
     // Release the object
@@ -177,9 +180,9 @@ private:
 };
 
 #if defined(LINUX64)
-  static_assert(sizeof(_mfxSession) == 440, "size_of_session_is_fixed");
+  MSDK_STATIC_ASSERT(sizeof(_mfxSession) == 440, size_of_session_is_fixed);
 #elif defined(LINUX32)
-  static_assert(sizeof(_mfxSession) == 244, "size_of_session_is_fixed");
+  MSDK_STATIC_ASSERT(sizeof(_mfxSession) == 244, size_of_session_is_fixed);
 #endif
 
 

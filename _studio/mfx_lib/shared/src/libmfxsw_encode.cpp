@@ -56,13 +56,30 @@
 #endif
 #endif
 
-template<>
-VideoENCODE* _mfxSession::Create<VideoENCODE>(mfxVideoParam& par)
+
+// declare static file section
+namespace
 {
-    VideoENCODE* pENCODE = nullptr;
-    VideoCORE* core = m_pCORE.get();
+
+VideoENCODE* CreateUnsupported(VideoCORE *, mfxStatus *res)
+{
+    *res = MFX_ERR_UNSUPPORTED;
+    return 0;
+}
+
+} // namespace
+
+VideoENCODE *CreateENCODESpecificClass(mfxU32 CodecId, VideoCORE *core, mfxSession session, mfxVideoParam * /* par */)
+{
+#if (!defined(MFX_ENABLE_H264_VIDEO_ENCODE) || !defined(MFX_ENABLE_H264_VIDEO_ENCODE_HW)) && \
+    !defined(MFX_ENABLE_MPEG2_VIDEO_ENCODE) && \
+    !defined(MFX_ENABLE_MJPEG_VIDEO_ENCODE) && \
+    (!defined(MFX_ENABLE_H265_VIDEO_ENCODE) || !defined(MFX_VA) || defined(AS_HEVCE_PLUGIN))
+    (void)session;
+#endif
+
+    VideoENCODE *pENCODE = (VideoENCODE *) 0;
     mfxStatus mfxRes = MFX_ERR_MEMORY_ALLOC;
-    mfxU32 CodecId = par.mfx.CodecId;
 
     // create a codec instance
     switch (CodecId)
@@ -70,26 +87,48 @@ VideoENCODE* _mfxSession::Create<VideoENCODE>(mfxVideoParam& par)
 #if defined(MFX_ENABLE_H264_VIDEO_ENCODE)
     case MFX_CODEC_AVC:
 #if defined(MFX_ENABLE_H264_VIDEO_ENCODE_HW)
-        pENCODE = new MFXHWVideoENCODEH264(core, &mfxRes);
-#endif // MFX_ENABLE_H264_VIDEO_ENCODE_HW
+        if (session->m_bIsHWENCSupport)
+        {
+            pENCODE = CreateMFXHWVideoENCODEH264(core, &mfxRes);
+        }
+
+#else //MFX_VA
+
+            pENCODE = new MFXVideoENCODEH264(core, &mfxRes);
+#endif //MFX_VA
+
         break;
 #endif // MFX_ENABLE_H264_VIDEO_ENCODE
 
 #if defined(MFX_ENABLE_MPEG2_VIDEO_ENCODE)
     case MFX_CODEC_MPEG2:
-        pENCODE = new MFXVideoENCODEMPEG2_HW(core, &mfxRes);
+        if (session->m_bIsHWENCSupport)
+        {
+            pENCODE = new MFXVideoENCODEMPEG2_HW(core, &mfxRes);
+        }
         break;
 #endif // MFX_ENABLE_MPEG2_VIDEO_ENCODE
 
 #if defined(MFX_ENABLE_MJPEG_VIDEO_ENCODE)
     case MFX_CODEC_JPEG:
-        pENCODE = new MFXVideoENCODEMJPEG_HW(core, &mfxRes);
+        if (session->m_bIsHWENCSupport)
+        {
+            pENCODE = new MFXVideoENCODEMJPEG_HW(core, &mfxRes);
+        }
+        break;
         break;
 #endif // MFX_ENABLE_MJPEG_VIDEO_ENCODE
 
 #if defined(MFX_ENABLE_H265_VIDEO_ENCODE) && defined(MFX_VA) && !defined(AS_HEVCE_PLUGIN)
     case MFX_CODEC_HEVC:
-        pENCODE = new MfxHwH265Encode::MFXVideoENCODEH265_HW(&m_coreInt, &mfxRes);
+        if (session->m_bIsHWENCSupport)
+        {
+            pENCODE = new MfxHwH265Encode::MFXVideoENCODEH265_HW(&session->m_coreInt, &mfxRes);
+        }
+        else
+        {
+            pENCODE = nullptr;
+        }
         break;
 #endif // MFX_ENABLE_H265_VIDEO_ENCODE
 
@@ -101,11 +140,12 @@ VideoENCODE* _mfxSession::Create<VideoENCODE>(mfxVideoParam& par)
     if (MFX_ERR_NONE != mfxRes)
     {
         delete pENCODE;
-        pENCODE = nullptr;
+        pENCODE = (VideoENCODE *) 0;
     }
 
     return pENCODE;
-}
+
+} // VideoENCODE *CreateENCODESpecificClass(mfxU32 CodecId, VideoCORE *core)
 
 mfxStatus MFXVideoENCODE_Query(mfxSession session, mfxVideoParam *in, mfxVideoParam *out)
 {
@@ -393,11 +433,28 @@ mfxStatus MFXVideoENCODE_Init(mfxSession session, mfxVideoParam *par)
         if (!session->m_pENCODE.get())
         {
             // create a new instance
-            session->m_pENCODE.reset(session->Create<VideoENCODE>(*par));
+            session->m_bIsHWENCSupport = true;
+            session->m_pENCODE.reset(CreateENCODESpecificClass(par->mfx.CodecId, session->m_pCORE.get(), session, par));
             MFX_CHECK(session->m_pENCODE.get(), MFX_ERR_INVALID_VIDEO_PARAM);
         }
 
         mfxRes = session->m_pENCODE->Init(par);
+
+        if (MFX_WRN_PARTIAL_ACCELERATION == mfxRes)
+        {
+            session->m_bIsHWENCSupport = false;
+            mfxRes = MFX_ERR_UNSUPPORTED;
+        }
+        else if (mfxRes >= MFX_ERR_NONE)
+            session->m_bIsHWENCSupport = true;
+
+        // SW fallback if EncodeGUID is absence
+        if (MFX_PLATFORM_HARDWARE == session->m_currentPlatform &&
+            !session->m_bIsHWENCSupport &&
+            MFX_ERR_NONE <= mfxRes)
+        {
+            mfxRes = MFX_ERR_UNSUPPORTED;
+        }
     }
     // handle error(s)
     catch(MFX_CORE_CATCH_TYPE)
@@ -704,6 +761,14 @@ mfxStatus MFXVideoENCODE_Reset(mfxSession session, mfxVideoParam *par)
             session->m_pScheduler->WaitForTaskCompletion(session->m_pENCODE.get());
             /* call the codec's method */
             mfxRes = session->m_pENCODE->Reset(par);
+
+            // SW fallback if EncodeGUID is absence
+            if (MFX_PLATFORM_HARDWARE == session->m_currentPlatform &&
+                !session->m_bIsHWENCSupport &&
+                MFX_ERR_NONE <= mfxRes)
+            {
+                mfxRes = MFX_ERR_UNSUPPORTED;
+            }
         }
     }
     /* handle error(s) */

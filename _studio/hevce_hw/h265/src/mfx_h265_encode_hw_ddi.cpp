@@ -38,8 +38,10 @@ GUID GetGUID(MfxVideoParam const & /* par */)
     return guid;
 }
 
-DriverEncoder* CreatePlatformH265Encoder(MFXCoreInterface* core, ENCODER_TYPE /*type*/)
+DriverEncoder* CreatePlatformH265Encoder(MFXCoreInterface* core, ENCODER_TYPE type)
 {
+    type;
+
     if (core)
     {
         mfxCoreParam par = {};

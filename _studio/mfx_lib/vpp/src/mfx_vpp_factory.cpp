@@ -34,10 +34,11 @@
 using namespace MfxHwVideoProcessing;
 
 // platform switcher
-DriverVideoProcessing* MfxHwVideoProcessing::CreateVideoProcessing(VideoCORE* /*core*/)
+DriverVideoProcessing* MfxHwVideoProcessing::CreateVideoProcessing(VideoCORE* core)
 {
     //MFX_CHECK_NULL_PTR1( core );
     //assert( core );
+    core;
     
 #if defined (MFX_VA_LINUX)
 

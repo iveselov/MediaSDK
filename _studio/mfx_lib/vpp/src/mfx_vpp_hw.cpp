@@ -511,9 +511,12 @@ mfxStatus ResMngr::Init(
 
 mfxStatus ResMngr::DoAdvGfx(
     mfxFrameSurface1 *input,
-    mfxFrameSurface1 * /*output*/,
+    mfxFrameSurface1 *output,
     mfxStatus *intSts)
 {
+    input;
+    output;
+
     assert( m_inputIndex  <=  m_inputIndexCount);
     assert( m_outputIndex <   m_outputIndexCountPerCycle);
 
@@ -620,9 +623,13 @@ mfxStatus ResMngr::DoAdvGfx(
  */
 mfxStatus ResMngr::DoMode30i60p(
     mfxFrameSurface1 *input,
-    mfxFrameSurface1 * /*output*/,
+    mfxFrameSurface1 *output,
     mfxStatus *intSts)
 {
+    input;
+    output;
+
+
     if( m_bOutputReady )// MARKER: output is ready, new out surface is need only
     {
          m_inputIndex++;
@@ -837,13 +844,15 @@ ReleaseResource* ResMngr::CreateSubResourceForMode30i60p(void)
 /// Sets up reference, current input and corresponding timeStamp
 mfxStatus ResMngr::FillTaskForMode30i60p(
     DdiTask* pTask,
-    mfxFrameSurface1 * /*pInSurface*/,
+    mfxFrameSurface1 *pInSurface,
     mfxFrameSurface1 *pOutSurface
 #ifdef MFX_ENABLE_MCTF
     , mfxFrameSurface1 * pOutSurfaceForApp
 #endif
 )
 {
+    pInSurface;
+
     mfxU32 refIndx = 0;
     pTask->bEOS = m_EOS;
     // bkwd
@@ -958,13 +967,14 @@ mfxStatus ResMngr::FillTaskForMode30i60p(
 
 mfxStatus ResMngr::FillTask(
     DdiTask* pTask,
-    mfxFrameSurface1 * /*pInSurface*/,
+    mfxFrameSurface1 *pInSurface,
     mfxFrameSurface1 *pOutSurface
 #ifdef MFX_ENABLE_MCTF
     , mfxFrameSurface1 * pOutSurfaceForApp
 #endif
 )
 {
+    pInSurface;
     mfxU32 refIndx = 0;
 
     // bkwd
@@ -2084,10 +2094,11 @@ mfxStatus VideoVPPHW::Query(VideoCORE *core, mfxVideoParam *par)
 
 mfxStatus  VideoVPPHW::Init(
     mfxVideoParam *par,
-    bool /*isTemporal*/)
+    bool isTemporal)
 {
     mfxStatus sts = MFX_ERR_NONE;
     bool bIsFilterSkipped = false;
+    isTemporal;
 
     m_frame_num = 0;
     m_critical_error = MFX_ERR_NONE;

@@ -69,12 +69,19 @@ public:
     }
     virtual mfxStatus PluginInit(mfxCoreInterface * /*core*/)
     {
+        MFX_TRACE_INIT();
+        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_API, "Plugin::PluginInit");
         return MFX_ERR_NONE;
     }
     virtual mfxStatus PluginClose()
     {
-        if (m_createdByDispatcher)
-            Release();
+        {
+            MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_API, "Plugin::PluginClose");
+            if (m_createdByDispatcher)
+                Release();
+        }
+
+        MFX_TRACE_CLOSE();
 
         return MFX_ERR_NONE;
     }
@@ -126,6 +133,11 @@ public:
     virtual mfxStatus EncodeFrameSubmit(mfxEncodeCtrl * /*ctrl*/, mfxFrameSurface1 * /*surface*/, mfxBitstream * /*bs*/, mfxThreadTask * /*task*/)
     {
         return MFX_ERR_UNDEFINED_BEHAVIOR;
+    }
+
+    virtual mfxU32 GetPluginType()
+    {
+        return MFX_PLUGINTYPE_VIDEO_ENCODE;
     }
 
     virtual void Release()

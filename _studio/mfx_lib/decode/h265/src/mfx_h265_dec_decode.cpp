@@ -56,9 +56,9 @@ mfxU32 CalculateNumThread(mfxVideoParam *par, eMFXPlatform platform)
 }
 
 inline
-bool IsNeedToUseHWBuffering(eMFXHWType /*type*/)
+bool IsNeedToUseHWBuffering(eMFXHWType type)
 {
-    return false;
+    type;return false;
 }
 
 inline

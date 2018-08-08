@@ -50,20 +50,25 @@
 
 #if !defined(LINUX_TARGET_PLATFORM) || defined(LINUX_TARGET_PLATFORM_BDW) || defined(LINUX_TARGET_PLATFORM_CFL) || defined(LINUX_TARGET_PLATFORM_BXT)
     #if !defined(ANDROID)
-        // HW decoders are part of library
+        // h264d
         #define MFX_ENABLE_H264_VIDEO_DECODE
         #define MFX_ENABLE_H265_VIDEO_DECODE
         #define MFX_ENABLE_VP8_VIDEO_DECODE_HW
-        #define MFX_ENABLE_VP9_VIDEO_DECODE_HW
-        
+        //#define MFX_ENABLE_VP9_VIDEO_DECODE_HW
+
+        // h265d
+        #if defined(AS_HEVCD_PLUGIN) || defined(AS_HEVCE_PLUGIN)
+            #define MFX_ENABLE_H265_VIDEO_DECODE
+        #endif
+
         //h264e
         #define MFX_ENABLE_H264_VIDEO_ENCODE
 
         //h265e
-        #if defined(AS_HEVCE_PLUGIN) || defined(MFX_VA)
+        #if defined(AS_HEVCD_PLUGIN) || defined(AS_HEVCE_PLUGIN) || defined(MFX_VA)
             #define MFX_ENABLE_H265_VIDEO_ENCODE
         #endif
-        
+        //hevc FEI ENCODE
         #if MFX_VERSION >= 1023 && !defined(LINUX_TARGET_PLATFORM_BXT)
             #define MFX_ENABLE_H264_REPARTITION_CHECK
         #endif
@@ -82,7 +87,6 @@
             #define MFX_ENABLE_H264_VIDEO_FEI_ENC
             #define MFX_ENABLE_H264_VIDEO_FEI_PAK
         #endif
-
         // mpeg2
         #define MFX_ENABLE_MPEG2_VIDEO_DECODE
         #define MFX_ENABLE_MPEG2_VIDEO_ENCODE
@@ -162,7 +166,9 @@
         #undef MFX_ENABLE_HEVC_VIDEO_FEI_ENCODE
         #undef MFX_ENABLE_VP8_VIDEO_DECODE_HW
     #endif // #if defined(AS_HEVCD_PLUGIN)
-
+    #if defined(AS_HEVCD_PLUGIN)
+        #define MFX_ENABLE_H265_VIDEO_DECODE
+    #endif
     #if defined(AS_HEVCE_PLUGIN)
         #define MFX_ENABLE_H265_VIDEO_ENCODE
             #define MFX_ENABLE_CM
@@ -170,7 +176,18 @@
     #if defined(AS_HEVC_FEI_ENCODE_PLUGIN) && MFX_VERSION >= 1027 && !defined(LINUX_TARGET_PLATFORM_BXT)
         #define MFX_ENABLE_HEVC_VIDEO_FEI_ENCODE
     #endif
-    
+    #if defined(AS_VP8DHW_PLUGIN)
+        #define MFX_ENABLE_VP8_VIDEO_DECODE_HW
+    #endif
+    #if defined(AS_VP8D_PLUGIN)
+        #define MFX_ENABLE_VP8_VIDEO_DECODE_HW
+    #endif
+
+    #if defined(AS_VP9D_PLUGIN)
+        //#define MFX_ENABLE_VP9_VIDEO_DECODE
+        #define MFX_ENABLE_VP9_VIDEO_DECODE_HW
+    #endif
+
 #else // LINUX_TARGET_PLATFORM
     #if defined(LINUX_TARGET_PLATFORM_BXTMIN) // PRE_SI_GEN == 9
         #include "mfx_common_linux_bxtmin.h"
@@ -189,8 +206,8 @@
 #endif
 #endif
 
-// The line below HAS to be changed to MFX_VERSION specific version i.e. 1027
-// after inclusion of respective features into official API
+// The line below HAS to be changed to MFX_VERSION >= 1027
+// after THE API is switched to 1.27
 #if MFX_VERSION >= MFX_VERSION_NEXT
     #define MFX_ENABLE_VPP_RUNTIME_HSBC
     #define MFX_ENABLE_RGBP
