@@ -53,17 +53,6 @@
             #endif
         #endif
 
-        // mpeg2
-        #define MFX_ENABLE_MPEG2_VIDEO_DECODE
-        #define MFX_ENABLE_MPEG2_VIDEO_ENCODE
-
-        //// vc1
-        #define MFX_ENABLE_VC1_VIDEO_DECODE
-
-        // mjpeg
-        #define MFX_ENABLE_MJPEG_VIDEO_DECODE
-        #define MFX_ENABLE_MJPEG_VIDEO_ENCODE
-
         // vpp
         #define MFX_ENABLE_DENOISE_VIDEO_VPP
         #define MFX_ENABLE_VPP
@@ -71,7 +60,6 @@
             #define MFX_ENABLE_SCENE_CHANGE_DETECTION_VPP
         #endif
 
-        #define MFX_ENABLE_MPEG2_VIDEO_ENCODE_HW
         #if defined(AS_H264LA_PLUGIN)
             #define MFX_ENABLE_LA_H264_VIDEO_HW
         #endif
@@ -86,8 +74,6 @@
     #endif // #if !defined(ANDROID)
 
     #if defined(AS_H264LA_PLUGIN)
-        #undef MFX_ENABLE_MJPEG_VIDEO_DECODE
-        #undef MFX_ENABLE_MJPEG_VIDEO_ENCODE
         #undef MFX_ENABLE_H264_VIDEO_FEI_ENCODE
         #undef MFX_ENABLE_VPP
     #endif
@@ -96,15 +82,10 @@
         #undef MFX_ENABLE_H265_VIDEO_DECODE
         #undef MFX_ENABLE_H264_VIDEO_DECODE
         #undef MFX_ENABLE_H264_VIDEO_ENCODE
-        #undef MFX_ENABLE_MPEG2_VIDEO_DECODE
         #undef MFX_ENABLE_MPEG2_VIDEO_ENCODE
-        #undef MFX_ENABLE_VC1_VIDEO_DECODE
-        #undef MFX_ENABLE_MJPEG_VIDEO_DECODE
-        #undef MFX_ENABLE_MJPEG_VIDEO_ENCODE
         #undef MFX_ENABLE_DENOISE_VIDEO_VPP
         #undef MFX_ENABLE_VPP
         #undef MFX_ENABLE_SCENE_CHANGE_DETECTION_VPP
-        #undef MFX_ENABLE_MPEG2_VIDEO_ENCODE_HW
         #undef MFX_ENABLE_AAC_AUDIO_DECODE
         #undef MFX_ENABLE_MP3_AUDIO_DECODE
     #endif

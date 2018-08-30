@@ -953,7 +953,6 @@ mfxStatus VAAPIEncoder::CreateAccelerationService(MfxVideoParam const & par)
     if ((attrib[1].value & vaRCType) == 0)
         return MFX_ERR_DEVICE_FAILED;
 
-    attrib[0].value = VA_RT_FORMAT_YUV420;
     attrib[1].value = vaRCType;
 
     sts = CheckExtraVAattribs(attrib);
@@ -1324,7 +1323,6 @@ mfxStatus VAAPIEncoder::Execute(Task const & task, mfxHDLPair pair)
             MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
         }
     }
-
 
     if (bCUQPMap)
     {
@@ -1745,15 +1743,15 @@ mfxStatus VAAPIEncoder::QueryStatus(Task & task)
     {
         VASurfaceStatus surfSts = VASurfaceSkipped;
 
-        m_feedbackCache.erase(m_feedbackCache.begin() + indxSurf);
-        guard.Unlock();
+        vaSts = vaQuerySurfaceStatus(m_vaDisplay, waitSurface, &surfSts);
 
+        MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
+
+        if (VASurfaceReady == surfSts)
         {
-            MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaSyncSurface");
-            vaSts = vaSyncSurface(m_vaDisplay, waitSurface);
-            MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
+            m_feedbackCache.erase(m_feedbackCache.begin() + indxSurf);
+            guard.Unlock();
         }
-        surfSts = VASurfaceReady;
 
         switch (surfSts)
         {

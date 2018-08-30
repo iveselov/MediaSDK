@@ -27,7 +27,7 @@ endif
 # Passing Android-dependency information to the code
 MFX_CFLAGS += \
   -DMFX_ANDROID_VERSION=$(MFX_ANDROID_VERSION) \
-  -include mfx_config.h
+  -include mfx_android_config.h
 
 #  Security
 MFX_CFLAGS += \
@@ -36,6 +36,9 @@ MFX_CFLAGS += \
   -O2 -D_FORTIFY_SOURCE=2 \
   -Wformat -Wformat-security \
   -fexceptions -frtti
+
+# LibVA support.
+MFX_CFLAGS_LIBVA := -DLIBVA_SUPPORT -DLIBVA_ANDROID_SUPPORT
 
 # Setting usual paths to include files
 MFX_INCLUDES := \
